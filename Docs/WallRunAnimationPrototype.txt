@@ -1,0 +1,37 @@
+LEFT WALL RUN - ANIMATION EXPERIMENT
+
+Asset: /Game/Showcase/AnimationExperiments/WallRun/AA_WallRun_Left_Prototype
+Source: /Game/Characters/Mannequins/Animations/Manny/MM_Run_Fwd
+
+Separate Manny animation sequence; no existing animation, plugin source,
+animation Blueprint or gameplay binding was replaced. No Git commits.
+
+The duplicate removes forward root motion, adds a 16-degree body lean away
+from a left wall, reshapes ankle paths using the source's foot-lift timing,
+solves knee and elbow positions, adjusts sole orientation, rebalances the
+hands, and closes the first/last pose. IK foot/hand markers follow the result.
+The notional wall is component-space +X, character left with mesh yaw -90.
+
+This is a first-pass animation prototype, not a finished gameplay animation.
+Wall clearance, sole contact, knee direction, hand poses, speed matching and
+entry/exit blends require visual and gameplay review before plugin migration.
+
+Authoring script: Scripts/create_wall_run_prototype.py
+Preview and validation: Scripts/preview_wall_run_prototype.py
+Reports: Saved/WallRunPrototypeReport.json, WallRunPrototypeValidation.json
+Validation checks in-place root position and endpoint translation continuity.
+Original MM_Run_Fwd and the Prototypes project are unchanged.
+
+Revisions:
+AA_WallRun_Left_ExtendedArm: steady extended left arm and wrist.
+AA_WallRun_Left_PalmContact: open left fingers/thumb, palm toward the
+component +X wall, fingers up. Based on ExtendedArm; right hand unchanged.
+These are animation-only prototypes; actual contact still needs a wall test.
+
+AA_WallRun_Right_PalmContact: baked skeletal mirror of the accepted left
+PalmContact revision. Uses reference-pose rotation corrections, swaps L/R
+bones and foot sync markers, and moves the extended open palm to the right.
+Validation: zero root travel, zero endpoint translation seam, maximum
+mirrored joint position error below 0.001 cm. Not bound to gameplay.
+Script: Scripts/create_wall_run_right.py
+Report: Saved/WallRunRightPalmContactReport.json

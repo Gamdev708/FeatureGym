@@ -9,8 +9,8 @@
 #include "State/Attack/AttackIdleState.h"
 #include "HAL/IConsoleManager.h"
 
-static TAutoConsoleVariable<int32> CVarComboDebug(
-    TEXT("combo.Debug"), 0, TEXT("Enable attack debug output (0=off, 1=on); also requires Show Attack Debug on the attack asset."));
+// static TAutoConsoleVariable<int32> CVarComboDebug(
+//     TEXT("combo.Debug"), 0, TEXT("Enable attack debug output (0=off, 1=on); also requires Show Attack Debug on the attack asset."));
 
 UAttackActionState::UAttackActionState()
 {
@@ -24,38 +24,38 @@ UAttackActionState::UAttackActionState()
 
 void UAttackActionState::DebugAttack(const FString& Message, const FColor& Color) const
 {
-#if !UE_BUILD_SHIPPING
-    const AActor* Owner = AttackStateMachine ? AttackStateMachine->GetOwner() : nullptr;
-    const UWorld* World = Owner ? Owner->GetWorld() : nullptr;
-    if (!GEngine || !World || !World->IsGameWorld()) { return; }
-
-    // Reuse one row for this actor, including across different attack-state objects.
-    const uint64 DebugKey = (uint64(0x4154544B) << 32) | uint64(Owner->GetUniqueID());
-    if (!bShowAttackDebug || CVarComboDebug.GetValueOnGameThread() == 0)
-    {
-        GEngine->RemoveOnScreenDebugMessage(DebugKey);
-        return;
-    }
-
-    const FString Label = MoveName.IsNone() ? GetClass()->GetName() : MoveName.ToString();
-    const EInputButtons Button = DebugInputButton != EInputButtons::None ? DebugInputButton :
-        (bChargeEnabled ? ChargeButton : EInputButtons::None);
-    const FString InputLabel = StaticEnum<EInputButtons>()->GetNameStringByValue(static_cast<int64>(Button));
-    const FString StateLabel = bReleaseRequested ? TEXT("Released") :
-        (bCharging ? TEXT("Hold") : StaticEnum<EButtonState>()->GetNameStringByValue(static_cast<int64>(DebugInputState)));
-    const float DisplayDamage = bChargeEnabled && ChargeReleases.IsValidIndex(ChargeTier)
-        ? Damage * ChargeReleases[ChargeTier].DamageMultiplier : Damage;
-
-    GEngine->AddOnScreenDebugMessage(DebugKey, AttackDebugDuration, Color,
-        FString::Printf(TEXT("%s | %s, %s | DMG %.1f | %s"),
-            *Label, *InputLabel, *StateLabel, DisplayDamage, *GetNextAttackAvailability()));
-
-    // Detailed event text stays available in the Output Log, never as extra screen rows.
-    if (!Message.IsEmpty())
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("[Attack %s | %s] %s"), *GetNameSafe(Owner), *Label, *Message);
-    }
-#endif
+// #if !UE_BUILD_SHIPPING
+//     const AActor* Owner = AttackStateMachine ? AttackStateMachine->GetOwner() : nullptr;
+//     const UWorld* World = Owner ? Owner->GetWorld() : nullptr;
+//     if (!GEngine || !World || !World->IsGameWorld()) { return; }
+// 
+//     // Reuse one row for this actor, including across different attack-state objects.
+//     const uint64 DebugKey = (uint64(0x4154544B) << 32) | uint64(Owner->GetUniqueID());
+//     if (!bShowAttackDebug || CVarComboDebug.GetValueOnGameThread() == 0)
+//     {
+//         GEngine->RemoveOnScreenDebugMessage(DebugKey);
+//         return;
+//     }
+// 
+//     const FString Label = MoveName.IsNone() ? GetClass()->GetName() : MoveName.ToString();
+//     const EInputButtons Button = DebugInputButton != EInputButtons::None ? DebugInputButton :
+//         (bChargeEnabled ? ChargeButton : EInputButtons::None);
+//     const FString InputLabel = StaticEnum<EInputButtons>()->GetNameStringByValue(static_cast<int64>(Button));
+//     const FString StateLabel = bReleaseRequested ? TEXT("Released") :
+//         (bCharging ? TEXT("Hold") : StaticEnum<EButtonState>()->GetNameStringByValue(static_cast<int64>(DebugInputState)));
+//     const float DisplayDamage = bChargeEnabled && ChargeReleases.IsValidIndex(ChargeTier)
+//         ? Damage * ChargeReleases[ChargeTier].DamageMultiplier : Damage;
+// 
+//     GEngine->AddOnScreenDebugMessage(DebugKey, AttackDebugDuration, Color,
+//         FString::Printf(TEXT("%s | %s, %s | DMG %.1f | %s"),
+//             *Label, *InputLabel, *StateLabel, DisplayDamage, *GetNextAttackAvailability()));
+// 
+//     // Detailed event text stays available in the Output Log, never as extra screen rows.
+//     if (!Message.IsEmpty())
+//     {
+//         UE_LOG(LogTemp, Verbose, TEXT("[Attack %s | %s] %s"), *GetNameSafe(Owner), *Label, *Message);
+//     }
+// #endif
 }
 
 bool UAttackActionState::CanTransitionToNextAttack() const
@@ -161,7 +161,7 @@ void UAttackActionState::Enter()
         !ValidateChargeSettings())
     {
         DebugAttack(TEXT("ERROR: Invalid animation instance, montage, speed, or charge sections -> Idle"), FColor::Red);
-        UE_LOG(LogTemp, Warning, TEXT("Attack %s has invalid montage, speed, or charge sections."), *GetName());
+        // UE_LOG(LogTemp, Warning, TEXT("Attack %s has invalid montage, speed, or charge sections."), *GetName());
         Reset();
         return;
     }

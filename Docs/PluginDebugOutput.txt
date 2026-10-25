@@ -1,0 +1,16 @@
+PLUGIN DEBUG OUTPUT
+
+FeatureGym2 plugin copies now default to quiet debug output. Prototypes is
+unchanged. These are debug-only source changes after the source restoration.
+
+aps.Debug 0 (default): suppresses parkour screen messages and trace drawings.
+aps.Debug 1: enables those existing diagnostics.
+
+combo.Debug 0 (default): suppresses attack debug screen rows and verbose
+DebugAttack logs, even if a Blueprint has Show Attack Debug enabled.
+combo.Debug 1: permits debugging for attack assets with Show Attack Debug on.
+The native Show Attack Debug default is also false for new attack assets.
+
+The independent warning for invalid attack configuration remains available
+in the Output Log. Gameplay logic and the showcase HUD are unchanged.
+Backups: Saved/DebugOutputBackup. Build log: Saved/Logs/DebugOutputCompile.log.

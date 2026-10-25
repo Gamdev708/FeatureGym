@@ -72,7 +72,6 @@ private:
     void SwitchMode(bool bCombat);
     void ResetRun();
     void ReturnToCheckpoint();
-    void UpdateClimbingAnimation();
     void Slide();
     void Hop();
     void LightPressed();

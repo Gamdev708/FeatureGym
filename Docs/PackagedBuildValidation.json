@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-22",
+  "engine": "5.8.3",
+  "configuration": "Shipping",
+  "platform": "Win64",
+  "output": "E:\\Unreal Projects\\Builds\\FeatureGym2-Showcase-Windows",
+  "startup_map": "/Game/Showcase/Maps/L_Showcase_SystemsInMotion",
+  "packaging_exit_code": 0,
+  "cook_errors": 0,
+  "cook_warnings": 0,
+  "packaged_window_and_rendering": "Verified: showcase level, Manny and HUD visible in packaged executable",
+  "input_testing": "User input detected in game window; further automated input stopped",
+  "full_route_tested": false,
+  "plugin_movement": "Restored original movement source with approved debug switches; no previous movement patches reapplied",
+  "runtime_installer": "Windows\\Engine\\Extras\\Redist\\en-us\\vc_redist.x64.exe",
+  "exe_sha256": "4F6B9C4527988F4DCA5884AD4E6BFAE8EEE4767BE9FA85CFD88908BAEA38D657",
+  "packaging_log": "Saved/Logs/ShowcasePackaging.log",
+  "debug_symbols": "Saved/PackagingSymbols/20261022-Shipping"
+}

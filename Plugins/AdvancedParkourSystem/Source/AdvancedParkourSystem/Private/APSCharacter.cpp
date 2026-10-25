@@ -60,6 +60,61 @@ AAPSCharacter::AAPSCharacter(const FObjectInitializer& ObjectInitializer) : Supe
 void AAPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		Movement->OnEnterClimbStateDelegate.BindUObject(this, &AAPSCharacter::OnEnterClimbState);
+		Movement->OnExitClimbStateDelegate.BindUObject(this, &AAPSCharacter::OnExitClimbState);
+	}
+}
+
+void AAPSCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	OnExitClimbState();
+	if (UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		Movement->OnEnterClimbStateDelegate.Unbind();
+		Movement->OnExitClimbStateDelegate.Unbind();
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void AAPSCharacter::UnPossessed()
+{
+	OnExitClimbState();
+	Super::UnPossessed();
+}
+
+void AAPSCharacter::OnEnterClimbState()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* Player = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = Player->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				if (ClimbMappingContext)
+				{
+					FModifyContextOptions Options;
+					Options.bIgnoreAllPressedKeysUntilRelease = false;
+					Subsystem->AddMappingContext(ClimbMappingContext, 1, Options);
+				}
+			}
+		}
+	}
+}
+
+void AAPSCharacter::OnExitClimbState()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* Player = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = Player->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				if (ClimbMappingContext) Subsystem->RemoveMappingContext(ClimbMappingContext);
+			}
+		}
+	}
 }
 
 void AAPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -82,6 +137,14 @@ void AAPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAPSCharacter::Move);
+		if (ClimbMoveAction)
+		{
+			EnhancedInputComponent->BindAction(ClimbMoveAction, ETriggerEvent::Triggered, this, &AAPSCharacter::MoveClimbing);
+		}
+		if (ClimbDetachAction)
+		{
+			EnhancedInputComponent->BindAction(ClimbDetachAction, ETriggerEvent::Started, this, &AAPSCharacter::DetachFromClimb);
+		}
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAPSCharacter::Look);
@@ -96,6 +159,10 @@ void AAPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 			
 			
 		}
+	}
+	if (const UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		if (Movement->IsClimbing()) OnEnterClimbState();
 	}
 }
 
@@ -119,6 +186,9 @@ void AAPSCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAd
 
 void AAPSCharacter::Move(const FInputActionValue& Value)
 {
+	const UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement());
+	if (Movement && Movement->IsClimbing()) return;
+
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -137,6 +207,29 @@ void AAPSCharacter::Move(const FInputActionValue& Value)
 		// add movement 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+	}
+}
+
+void AAPSCharacter::MoveClimbing(const FInputActionValue& Value)
+{
+	const UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement());
+	if (!Controller || !Movement || !Movement->IsClimbing()) return;
+
+	const FVector2D Axis = Value.Get<FVector2D>();
+	const FVector IntoWall = -Movement->GetClimbableSurfaceNormal().GetSafeNormal();
+	if (IntoWall.IsNearlyZero()) return;
+
+	const FVector UpAlongWall = FVector::CrossProduct(IntoWall, GetActorRightVector()).GetSafeNormal();
+	const FVector RightAlongWall = FVector::CrossProduct(IntoWall, -GetActorUpVector()).GetSafeNormal();
+	AddMovementInput(UpAlongWall, Axis.Y);
+	AddMovementInput(RightAlongWall, Axis.X);
+}
+
+void AAPSCharacter::DetachFromClimb()
+{
+	if (UAPSCharacterMovementComponent* Movement = Cast<UAPSCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		if (Movement->IsClimbing()) Movement->ToggleClimbing(false);
 	}
 }
 

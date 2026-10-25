@@ -38,6 +38,15 @@ class ADVANCEDPARKOURSYSTEM_API AAPSCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Climbing", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputMappingContext> ClimbMappingContext = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Climbing", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ClimbMoveAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Climbing", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ClimbDetachAction = nullptr;
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
@@ -66,6 +75,13 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void UnPossessed() override;
+
+	void MoveClimbing(const FInputActionValue& Value);
+	void DetachFromClimb();
+	void OnEnterClimbState();
+	void OnExitClimbState();
 	
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);

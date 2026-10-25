@@ -85,13 +85,9 @@ AFGShowcaseCharacter::AFGShowcaseCharacter(const FObjectInitializer& Initializer
 }
 void AFGShowcaseCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
-    // Direct key bindings keep the showcase independent of Prototypes input assets.
-    ACharacter::SetupPlayerInputComponent(Input);
-    Input->BindKey(EKeys::SpaceBar,IE_Pressed,this,&ACharacter::Jump);
-    Input->BindKey(EKeys::SpaceBar,IE_Released,this,&ACharacter::StopJumping);
-    Input->BindKey(EKeys::E,IE_Pressed,this,&AFGShowcaseCharacter::Climb);
-    Input->BindKey(EKeys::Q,IE_Pressed,this,&AFGShowcaseCharacter::StopClimb);
-    Input->BindKey(EKeys::LeftControl,IE_Pressed,this,&AFGShowcaseCharacter::Slide);
+    // Movement, look, traversal and climb contexts use the same bindings as Prototypes.
+    Super::SetupPlayerInputComponent(Input);
+    // Only the Gym's demonstration controls are added here.
     Input->BindKey(EKeys::F,IE_Pressed,this,&AFGShowcaseCharacter::Hop);
     Input->BindKey(EKeys::One,IE_Pressed,this,&AFGShowcaseCharacter::TraverseMode);
     Input->BindKey(EKeys::Two,IE_Pressed,this,&AFGShowcaseCharacter::CombatMode);
@@ -112,21 +108,8 @@ void AFGShowcaseCharacter::Tick(float DeltaSeconds)
     Elapsed += DeltaSeconds;
     APlayerController* PC=Cast<APlayerController>(GetController());
     if (!PC || !IsLocallyControlled()) return;
-    float MX=0,MY=0; PC->GetInputMouseDelta(MX,MY);
-    AddControllerYawInput(MX*.65f); AddControllerPitchInput(-MY*.65f);
-    const float Forward=(PC->IsInputKeyDown(EKeys::W)?1.f:0.f)-(PC->IsInputKeyDown(EKeys::S)?1.f:0.f);
-    const float Right=(PC->IsInputKeyDown(EKeys::D)?1.f:0.f)-(PC->IsInputKeyDown(EKeys::A)?1.f:0.f);
     auto* Movement=CastChecked<UAPSCharacterMovementComponent>(GetCharacterMovement());
-    const FRotator Yaw(0,PC->GetControlRotation().Yaw,0);
-    if (Movement->IsClimbing())
-    { AddMovementInput(FVector::UpVector,Forward); AddMovementInput(GetActorRightVector(),Right); }
-    else
-    {
-        AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),Forward);
-        AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y),Right);
-    }
     Movement->MaxWalkSpeed=PC->IsInputKeyDown(EKeys::LeftShift)?800.f:500.f;
-    UpdateClimbingAnimation();
     const FVector P=GetActorLocation();
     const int32 Index=P.X < -5400 ? 0 : P.X < -2200 ? 1 : P.X < 1000 ? 2 : P.X < 4200 ? 3 : P.X < 7500 ? 4 : 5;
     static const TCHAR* Names[]={TEXT("00 / ARRIVAL"),TEXT("01 / VAULT + SLIDE"),TEXT("02 / WALL RUN + WALL JUMP"),TEXT("03 / CLIMB + LANDING"),TEXT("04 / COMBO LAB"),TEXT("05 / FINAL ARENA")};
@@ -156,31 +139,6 @@ void AFGShowcaseCharacter::Tick(float DeltaSeconds)
             }
         }
     }
-}
-void AFGShowcaseCharacter::UpdateClimbingAnimation()
-{
-    UAnimInstance* Anim=GetMesh()->GetAnimInstance();
-    if(!Anim || bCombatMode)return;
-    auto* Movement=CastChecked<UAPSCharacterMovementComponent>(GetCharacterMovement());
-    UAnimMontage* Active=Anim->GetCurrentActiveMontage();
-    const bool bActiveClimbLoop=Active && (Active==ClimbUpLoop || Active==ClimbDownLoop || Active==ClimbIdleLoop);
-    if(!Movement->IsClimbing())
-    {
-        if(bActiveClimbLoop)Anim->Montage_Stop(.15f,Active);
-        return;
-    }
-    // Entry and mantle montages own their animation and root motion until finished.
-    if(Active && !bActiveClimbLoop)return;
-    const float VerticalSpeed=Movement->GetUnrotatedClimbingVelocity().Z;
-    UAnimMontage* Desired=VerticalSpeed>5.f?ClimbUpLoop:VerticalSpeed < -5.f?ClimbDownLoop:ClimbIdleLoop;
-    if(!Desired)return;
-    if(Active!=Desired)
-    {
-        Anim->Montage_Play(Desired,1.f);
-        Anim->Montage_SetNextSection(TEXT("Default"),TEXT("Default"),Desired);
-    }
-    const float Rate=Desired==ClimbIdleLoop?1.f:FMath::Clamp(FMath::Abs(VerticalSpeed)/60.f,.2f,2.f);
-    Anim->Montage_SetPlayRate(Desired,Rate);
 }
 void AFGShowcaseCharacter::Climb()
 {
@@ -241,7 +199,7 @@ void AFGShowcaseHUD::DrawHUD()
     const FString Mode=P->bCombatMode?TEXT("COMBO SYSTEM"):TEXT("ADVANCED PARKOUR");
     DrawText(FString::Printf(TEXT("%s  |  %s  |  %.0f cm/s  |  %.1fs"),*Mode,*P->GetMovementLabel(),P->GetVelocity().Size(),P->Elapsed),FLinearColor(.7f,.8f,.85f),36,84);
     DrawText(TEXT("WASD move / Mouse look / Shift sprint / Space jump / 1 parkour / 2 combat"),FLinearColor::White,36,108);
-    DrawText(P->bCombatMode?TEXT("LMB light + charge follow-up / MMB medium / RMB heavy / R checkpoint / Home restart"):TEXT("E vault or climb / Q detach / Ctrl slide or crouch / R checkpoint / Home restart"),FLinearColor::White,36,132);
+    DrawText(P->bCombatMode?TEXT("LMB light + charge follow-up / MMB medium / RMB heavy / R checkpoint / Home restart"):TEXT("E vault or climb / Q detach / C slide or crouch / F hop / R checkpoint / Home restart"),FLinearColor::White,36,132);
     if(P->bCombatMode)
     {
         DrawText(FString::Printf(TEXT("PLUGIN STATE: %s   DAMAGE: %.0f   TARGET HITS: %d   LAST HIT: %.0f"),P->Combo->IsInAttackState()?TEXT("ATTACK"):TEXT("IDLE"),P->Combo->GetCurrentStateDamage(),P->Hits,P->LastHitDamage),FLinearColor(1,.65f,.2f),36,178);

@@ -1,0 +1,15 @@
+PLUGIN SOURCE RESTORATION
+
+At the user's request, both plugins' Source directories were restored to
+match the original Prototypes project. All files were checked by SHA-256.
+Only APSCharacterMovementComponent.cpp and .h required restoration;
+ComboSystemPlugin source already matched.
+
+Showcase source, level assets, retargeted animations, and Blueprint settings
+remain in place. Previous climbing/crouch validation reports describe the
+modified plugin implementation before this restoration and do not validate
+the restored version. Rebuild the editor before testing restored behavior.
+The crouch smoke script's Blueprint-callable toggle was also removed by the
+restoration, so that script requires adaptation before reuse.
+
+The reverted edits are backed up under Saved/PluginSourceRevertBackup.

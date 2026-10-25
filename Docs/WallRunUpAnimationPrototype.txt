@@ -1,0 +1,22 @@
+UPWARD WALL RUN - ARMS-BACK PROTOTYPE
+
+Asset: /Game/Showcase/AnimationExperiments/WallRun/AA_WallRun_Up_ArmsBack_Prototype
+Source: Manny/MM_Run_Fwd (original unchanged).
+
+Uses the supplied running reference's arms-back silhouette, adapted for
+upward travel: both arms extend down/back with open hands, the torso leans
+away from a front wall, knees alternate upward, and soles face the wall.
+Ground foot lift is mapped into recovery away from the vertical surface.
+
+The clip is in place. The movement component must supply upward translation.
+The wall is component +Y, corresponding to actor +X with mesh yaw -90.
+This is an animation-only experiment, not connected to the gameplay graph.
+No plugin source changes, no Prototypes migration, and no Git commits.
+
+Scripts/create_wall_run_up.py authors the clip.
+Scripts/preview_wall_run_up.py opens it and checks saved pose data.
+Saved/WallRunUpPrototypeReport.json records authoring.
+Saved/WallRunUpPrototypeValidation.json records root/loop/knee checks.
+
+Still needs review against a real wall for speed matching, contact distance,
+toe penetration, entry/exit blends, and the desired amount of body lean.

@@ -10,10 +10,6 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "HAL/IConsoleManager.h"
-
-static TAutoConsoleVariable<int32> CVarAPSDebug(
-    TEXT("aps.Debug"), 0, TEXT("Enable parkour debug messages and trace drawings (0=off, 1=on)."));
 
 
 // Called when the game starts
@@ -148,7 +144,33 @@ void UAPSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previou
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_WallRunning)
 	{
-		GetWorld()->GetTimerManager().SetTimer(WallRunCooldownTimerHandle, WallRunCooldownDuration, false);
+		// Both current wall-run MoveComponentTo calls use this
+		// callback target and UUID. Stop their interpolation.
+		FLatentActionInfo StopInfo;
+		StopInfo.CallbackTarget = this;
+		StopInfo.UUID = INDEX_NONE;
+
+		UKismetSystemLibrary::MoveComponentTo(
+			CharacterOwner->GetRootComponent(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			false,
+			false,
+			0.0f,
+			false,
+			EMoveComponentAction::Stop,
+			StopInfo
+		);
+
+		bWallRunInitialized = false;
+		bIsTurningAroundCorner = false;
+		WallRunSide = EWRS_None;
+
+		GetWorld()->GetTimerManager().SetTimer(
+			WallRunCooldownTimerHandle,
+			WallRunCooldownDuration,
+			false
+		);
 	}
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_Slide)
@@ -165,13 +187,24 @@ void UAPSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previou
 
 bool UAPSCharacterMovementComponent::DoJump(bool bReplayingMoves)
 {
-	
-	FHitResult WallHit;
-	if (CanWallJump(WallHit))
+	if (IsWallRunning())
 	{
+		if (!CharacterOwner || !CharacterOwner->CanJump())
+		{
+			return false;
+		}
+
+		FHitResult WallHit;
+
+		if (!CanWallJump(WallHit))
+		{
+			return false;
+		}
+
 		DoWallJump(WallHit);
 		return true;
 	}
+
 	const bool bIsMidJump = IsFalling() && OwningPlayerCharacter->JumpCurrentCount > 0;
 	if (bIsMidJump)
 	{
@@ -232,9 +265,10 @@ void UAPSCharacterMovementComponent::InitWallRun()
 	bIsTurningAroundCorner = false;
 	CurrentWallRunUpTime = 0.f;
 	SetMovementMode(MOVE_Custom, CMOVE_WallRunning);
+	CharacterOwner->JumpCurrentCount = 0;
 	if (CanWallRunUp(WallRunHitResult.ImpactNormal))
 	{
-		if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp")); }
+// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp"));
 		WallRunSide = EWRS_Front;
 	}
 	else
@@ -302,7 +336,7 @@ void UAPSCharacterMovementComponent::PhysWallRunning(float deltaTime, int32 Iter
 	FVector TraceDirection = CharacterOwner->GetActorForwardVector();
 	FVector TraceEnd = TraceStart + TraceDirection * WallSearchTraceDistance; // Wall Trace
 	GetWorld()->LineTraceSingleByChannel(WallRunHitResult, TraceStart, TraceEnd, ECC_Visibility);
-	if (CVarAPSDebug.GetValueOnGameThread() != 0) { DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Green, false); }
+// 	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Green, false);
 	if (WallRunHitResult.bBlockingHit)
 	{
 		HandleWallRunCorner();
@@ -365,7 +399,7 @@ void UAPSCharacterMovementComponent::PhysWallRunningUp(float deltaTime, int32 It
 	CurrentWallRunUpTime += deltaTime;
 	if (CurrentWallRunUpTime > WallRunUpDuration)
 	{
-		if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp Times Up")); }
+// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp Times Up"));
 		SetMovementMode(MOVE_Falling);
 		return;
 	}
@@ -375,7 +409,7 @@ void UAPSCharacterMovementComponent::PhysWallRunningUp(float deltaTime, int32 It
 
 	if (!WallRunHitResult.bBlockingHit)
 	{
-		if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp Invalid")); }
+// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("WallRunUp Invalid"));
 		SetMovementMode(MOVE_Falling);
 		return;
 	}
@@ -490,16 +524,16 @@ TArray<FHitResult> UAPSCharacterMovementComponent::DoCapusleTraceMultipleByObjec
 	TArray<FHitResult> OutCapsuleTraceHitResults;
 
 	EDrawDebugTrace::Type DebugTraceType = EDrawDebugTrace::None;
-
-	if (bShowDebugShape && CVarAPSDebug.GetValueOnGameThread() != 0)
-	{
-		DebugTraceType = EDrawDebugTrace::ForOneFrame;
-
-		if (bDrawPersistantShapes)
-		{
-			DebugTraceType = EDrawDebugTrace::Persistent;
-		}
-	}
+// 
+// 	if (bShowDebugShape)
+// 	{
+// 		DebugTraceType = EDrawDebugTrace::ForOneFrame;
+// 
+// 		if (bDrawPersistantShapes)
+// 		{
+// 			DebugTraceType = EDrawDebugTrace::Persistent;
+// 		}
+// 	}
 
 	UKismetSystemLibrary::CapsuleTraceMultiForObjects(
 		this,
@@ -524,16 +558,16 @@ FHitResult UAPSCharacterMovementComponent::DoLineCapsuleTraceSingleByObject(
 	FHitResult OutHit;
 
 	EDrawDebugTrace::Type DebugTraceType = EDrawDebugTrace::None;
-
-	if (bShowDebugShape && CVarAPSDebug.GetValueOnGameThread() != 0)
-	{
-		DebugTraceType = EDrawDebugTrace::ForOneFrame;
-
-		if (bDrawPersistantShapes)
-		{
-			DebugTraceType = EDrawDebugTrace::Persistent;
-		}
-	}
+// 
+// 	if (bShowDebugShape)
+// 	{
+// 		DebugTraceType = EDrawDebugTrace::ForOneFrame;
+// 
+// 		if (bDrawPersistantShapes)
+// 		{
+// 			DebugTraceType = EDrawDebugTrace::Persistent;
+// 		}
+// 	}
 
 	UKismetSystemLibrary::LineTraceSingleForObjects(
 		this,
@@ -565,7 +599,7 @@ void UAPSCharacterMovementComponent::ToggleClimbing(bool bEnableClimb)
 		}
 		else if (CanClimbDown())
 		{
-			PlayClimbMontage(ClimbDownLedgeMontage);
+			PlayClimbMontage(ClimbDownLedgeMontageSettings.Montage);
 		}
 		else
 		{
@@ -612,6 +646,10 @@ bool UAPSCharacterMovementComponent::CanClimbDown()
 
 	if (WalkableSurfaceHit.bBlockingHit && !LedgeTraceHit.bBlockingHit)
 	{
+		if (ClimbDownLedgeMontageSettings.bUseMotionWarping && ClimbDownLedgeMontageSettings.WarpTargetName != NAME_None)
+		{
+			SetMotionWarpTarget(ClimbDownLedgeMontageSettings.WarpTargetName, WalkableSurfaceHit.ImpactPoint);
+		}
 		return true;
 	}
 
@@ -643,6 +681,7 @@ void UAPSCharacterMovementComponent::PhysClimbing(float deltaTime, int32 Iterati
 	if (CheckShouldStopClimbing() || CheckHasReachedFloor())
 	{
 		StopClimbing();
+		return;
 	}
 
 	RestorePreAdditiveRootMotionVelocity();
@@ -679,7 +718,7 @@ void UAPSCharacterMovementComponent::PhysClimbing(float deltaTime, int32 Iterati
 
 	if (CheckHasReachedLedge())
 	{
-		PlayClimbMontage(ClimbToTopMontage);
+		PlayClimbMontage(ClimbToTopMontageSettings.Montage);
 	}
 }
 
@@ -784,10 +823,14 @@ bool UAPSCharacterMovementComponent::CheckHasReachedLedge()
 		const FVector WalkableSurfaceTraceEnd = WalkableSurfaceTraceStart + DownVector * 100.f;
 
 		FHitResult WalkabkeSurfaceHitResult =
-			DoLineCapsuleTraceSingleByObject(WalkableSurfaceTraceStart, WalkableSurfaceTraceEnd);
+			DoLineCapsuleTraceSingleByObject(WalkableSurfaceTraceStart, WalkableSurfaceTraceEnd,true);
 
 		if (WalkabkeSurfaceHitResult.bBlockingHit && GetUnrotatedClimbingVelocity().Z > 10.f)
 		{
+			if (ClimbToTopMontageSettings.bUseMotionWarping && ClimbToTopMontageSettings.WarpTargetName != NAME_None)
+			{
+				SetMotionWarpTarget(ClimbToTopMontageSettings.WarpTargetName, WalkabkeSurfaceHitResult.ImpactPoint);
+			}
 			return true;
 		}
 	}
@@ -825,7 +868,7 @@ void UAPSCharacterMovementComponent::TryStartVaulting()
 		}
 		if (SelectedMontage == nullptr)
 		{
-			if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("No Montage Found for Vault Distance")); }
+// 			GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("No Montage Found for Vault Distance"));
 			return;
 		}
 		StartClimbing();
@@ -886,7 +929,7 @@ bool UAPSCharacterMovementComponent::CanStartVaulting(FVector& OutVaultStartPosi
 		}
 	}
 	OutDistance = FVector::Dist2D(OutVaultStartPosition, OutVaultLandPosition);
-	if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, FString::Printf(TEXT("Distance: %f"), OutDistance)); }
+// 	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, FString::Printf(TEXT("Distance: %f"), OutDistance));
 	if (OutVaultStartPosition != FVector::ZeroVector && OutVaultLandPosition != FVector::ZeroVector)
 	{
 		return true;
@@ -909,38 +952,65 @@ bool UAPSCharacterMovementComponent::IsClimbing() const
 #pragma region WallJumpCore
 bool UAPSCharacterMovementComponent::CanWallJump(FHitResult& OutWallHit) const
 {
-	if (!IsWallRunning() && IsFalling()) { return false; }
+	if (!IsWallRunning()) { return false; }
+
+	FVector TowardWall;
+
+	switch (WallRunSide)
+	{
+	case EWRS_LeftSide:
+		TowardWall = -UpdatedComponent->GetRightVector();
+		break;
+
+	case EWRS_RightSide:
+		TowardWall = UpdatedComponent->GetRightVector();
+		break;
+
+	case EWRS_Front:
+		TowardWall = UpdatedComponent->GetForwardVector();
+		break;
+
+	default:
+		return false;
+	}
 	
 	const FVector Start = UpdatedComponent->GetComponentLocation();
-	const FVector End = Start + UpdatedComponent->GetForwardVector() * WallJumpTraceDistance;
+	const float TraceLength = FMath::Max(WallJumpTraceDistance,CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleRadius()
+		   + 20.0f);
+	const FVector End = Start + TowardWall * TraceLength;
 	
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(CharacterOwner);
 	
-	FHitResult OppositeWallHitResult;
-	if (!GetWorld()->LineTraceSingleByChannel(OppositeWallHitResult,Start,End,ECC_Visibility,CollisionQueryParams))
+	if (!GetWorld()->LineTraceSingleByChannel(OutWallHit,Start,End,ECC_Visibility,CollisionQueryParams))
 	{
 		return false;
 	}
 	
-	if (FMath::Abs(OppositeWallHitResult.ImpactNormal.Z)>MaxWallJumpSurfaceNormalZ)
-	{
-		return false;
-	}
-	
-	OutWallHit = OppositeWallHitResult;
-	return true;
+	return OutWallHit.IsValidBlockingHit() && FMath::Abs(OutWallHit.ImpactNormal.Z) <= MaxWallJumpSurfaceNormalZ;
 	
 }
 
 void UAPSCharacterMovementComponent::DoWallJump(const FHitResult& WallHit)
 {
-	const FVector PushDirection =WallHit.ImpactNormal.GetSafeNormal();
+	const FVector PushDirectionFromWall =WallHit.ImpactNormal.GetSafeNormal2D();
+	const FVector HorizontalVelocity(Velocity.X, Velocity.Y, 0.f);
 	
-	CharacterOwner->SetActorRotation(PushDirection.Rotation());
-	Velocity = PushDirection * WallJumpOffPower + FVector::UpVector * WallJumpUpPower;
+	// Remove velocity pointing into or away from the wall.
+	// What remains travels parallel to the wall.
+	const FVector AlongWallVelocity = FVector::VectorPlaneProject(HorizontalVelocity,PushDirectionFromWall);
+	const FVector JumpVelocity = AlongWallVelocity * WallJumpMomentumRetention	+ PushDirectionFromWall * WallJumpOffPower + FVector::UpVector * WallJumpUpPower;
 	
 	SetMovementMode(MOVE_Falling);
+	Velocity = JumpVelocity;
+	
+	// Face the horizontal travel direction.
+	const FVector FacingDirection = JumpVelocity.GetSafeNormal2D();
+
+	if (!FacingDirection.IsNearlyZero())
+	{
+		CharacterOwner->SetActorRotation(FacingDirection.Rotation());
+	}
 }
 #pragma endregion
 
@@ -980,13 +1050,13 @@ void UAPSCharacterMovementComponent::PlayClimbMontage(UAnimMontage* MontageToPla
 
 void UAPSCharacterMovementComponent::OnClimbMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == IdleToClimbMontage || Montage == ClimbDownLedgeMontage)
+	if (Montage == IdleToClimbMontage || Montage == ClimbDownLedgeMontageSettings.Montage)
 	{
 		StartClimbing();
 		StopMovementImmediately();
 	}
 
-	if (Montage == ClimbToTopMontage || IsVaultMontage(Montage))
+	if (Montage == ClimbToTopMontageSettings.Montage || IsVaultMontage(Montage))
 	{
 		SetMovementMode(MOVE_Walking);
 	}
@@ -1172,7 +1242,7 @@ void UAPSCharacterMovementComponent::PhysSliding(float deltaTime, int32 Iteratio
 	                                                                     TArray<AActor*>(
 		                                                                     {FloorHit.HitResult.GetActor()}),
 	                                                                     // EDrawDebugTrace::Persistent,
-	                                                                     CVarAPSDebug.GetValueOnGameThread() != 0 ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None,
+	                                                                     EDrawDebugTrace::None, // Debug drawing disabled.
 	                                                                     SlideHitResult,
 	                                                                     false
 	);
@@ -1238,7 +1308,7 @@ void UAPSCharacterMovementComponent::ExitSlide()
 	FHitResult LineTraceForWhenUnderObstacle = DoLineCapsuleTraceSingleByObject(Start, Start + UpdatedComponent->GetUpVector() *100.f ,true,true);
 	if (LineTraceForWhenUnderObstacle.bBlockingHit)
 	{
-		if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("Character is Under the Object")); }
+// 		GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Red,TEXT("Character is Under the Object"));
 		bWantsToCrouch = true;
 		Crouch();
 	}
@@ -1269,14 +1339,14 @@ UAnimMontage* UAPSCharacterMovementComponent::SelectLandingMontage(float FallHei
 		if (FallHeight >= MontageData.MinFallHeight && FallHeight <= MontageData.MaxFallHeight)
 		{
 			SelectedMontage = MontageData.Montage;
-			if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Selected Montage: %s"), *SelectedMontage->GetName())); }
+// 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Selected Montage: %s"), *SelectedMontage->GetName()));
 			break;
 		}
 		
 	}
 	if (SelectedMontage == nullptr)
 	{
-		if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("No Montage Found for Vault Distance")); }
+// 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("No Montage Found for Vault Distance"));
 		return nullptr;
 	}
 	return SelectedMontage;
@@ -1286,7 +1356,7 @@ UAnimMontage* UAPSCharacterMovementComponent::SelectLandingMontage(float FallHei
 void UAPSCharacterMovementComponent::ProcessLanded(const FHitResult& Hit, float remainingTime, int32 Iterations)
 {
 	float const CurrentFallHeight = FMath::Max(0.f,FallApexHeight-Hit.ImpactPoint.Z);
-	if (CVarAPSDebug.GetValueOnGameThread() != 0 && GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Fall HEight: %f"), CurrentFallHeight)); }
+// 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Fall HEight: %f"), CurrentFallHeight));
 	if (UAnimMontage* LandingMontage = SelectLandingMontage(CurrentFallHeight))
 	{
 		PlayClimbMontage(LandingMontage);

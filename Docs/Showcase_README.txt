@@ -8,7 +8,7 @@ Press Play. Click the viewport to capture the mouse.
 CONTROLS
 WASD: move; mouse: look; Shift: sprint; Space: jump / wall jump.
 1: traversal character; 2: combat character (switch while grounded).
-E: vault / enter climb; Q: detach; Ctrl: slide / crouch.
+E: vault / enter climb; Q: detach; C: slide / crouch; F: hop.
 R: return to the current station checkpoint; Home: restart the route.
 Combat: left mouse = light, middle mouse = medium, right mouse = heavy.
 The second light-combo action supports charge: press LMB twice, hold the
@@ -91,3 +91,7 @@ Combat PIE smoke test passed: traversal-to-combat switch, active attack state,
 and practice-target health changing from 100 to 80 HP were observed.
 Evidence: Saved/ShowcaseCombatSmoke.json and Saved/Logs/ShowcaseCompile.log.
 The entire traversal course has not been manually play-tested end to end.
+
+Crouch fix: Ctrl toggles crouch while stationary or walking; at 600 cm/s
+or faster (sprinting), Ctrl slides. Standing up uses capsule clearance checks.
+Slide exit restores standing collision when clear or stays crouched under cover.

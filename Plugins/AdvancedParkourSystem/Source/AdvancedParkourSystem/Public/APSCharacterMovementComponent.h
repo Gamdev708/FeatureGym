@@ -71,6 +71,22 @@ struct FLandingMontageData
 	float MaxFallHeight = 100.f;
 };
 
+USTRUCT(BlueprintType)
+struct FTraversalMontageSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> Montage = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bUseMotionWarping = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,
+		meta = (EditCondition = "bUseMotionWarping"))
+	FName WarpTargetName = NAME_None;
+};
+
 DECLARE_DELEGATE(FOnEnterWallRunState);
 DECLARE_DELEGATE(FOnExitWallRunState);
 DECLARE_DELEGATE(FOnEnterClimbState);
@@ -180,7 +196,6 @@ protected:
 	bool CanHandleHopUp(FVector& OutHopUpTargetPosition);
 	void HandleHopDown();
 	bool CanHandleHopDown(FVector& OutHopDownTargetPosition);
-
 #pragma endregion
 	
 #pragma region SlideCore
@@ -211,6 +226,7 @@ public:
 	void ToggleClimbing(bool bEnableCliming);
 	void ToggleCrouch_Sliding();
 	void RequestHopping();
+	UFUNCTION(BlueprintCallable)
 	bool IsClimbing() const;
 	FORCEINLINE FVector GetClimbableSurfaceNormal() const { return CurrentClimbableSurfaceNormal; }
 	FVector GetUnrotatedClimbingVelocity() const;
@@ -221,7 +237,6 @@ private:
 	bool bWallRunInitialized = false;
 	bool bIsTurningAroundCorner = false;
 	bool bWantsToWallRun = false;
-	
 	FHitResult WallRunHitResult{};
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> PrevNonWallrunnableActor{nullptr};
@@ -259,6 +274,11 @@ private:
 		
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: WallRunning" ,meta = (AllowPrivateAccess = "true"))
 	float WallRunUpDuration = 3.f;
+	
+	// 1 = preserve all momentum along the wall.
+	// 0 = jump straight outward and upward.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: WallRunning" ,meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float WallJumpMomentumRetention  = 1.f;
 	
 	
 #pragma endregion
@@ -315,9 +335,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing" ,meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* IdleToClimbMontage;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing" ,meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* ClimbToTopMontage;
+	FTraversalMontageSettings ClimbToTopMontageSettings;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing" ,meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* ClimbDownLedgeMontage;
+	FTraversalMontageSettings ClimbDownLedgeMontageSettings;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing" ,meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* HopUpMontage;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing" ,meta = (AllowPrivateAccess = "true"))
