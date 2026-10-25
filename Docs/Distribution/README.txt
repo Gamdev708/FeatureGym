@@ -24,7 +24,7 @@ E                   Vault / attach to climbable wall
 W/S while climbing  Climb up/down
 A/D while climbing  Move sideways
 Q                   Detach from climbing
-Ctrl                Slide / crouch, depending on movement state
+C                   Slide / crouch, depending on movement state
 Left mouse          Light attack
 Middle mouse        Medium attack
 Right mouse         Heavy attack
@@ -53,8 +53,7 @@ Pasindu Siriwardana. Showcase integration, level generation and the documented
 debug controls were created with Codex assistance. Character, animation,
 Unreal template and SuperGrid assets are third-party assets.
 
-Combat target feedback is proximity-based demonstration logic, not an
-animation-timed weapon hitbox system. Sideways climbing has no dedicated
-movement clips. The earlier plugin movement modifications were reverted at
-the author's request; this build uses the restored movement logic with the
-approved debug-output switches. Retargeted animations remain included.
+This is a prototype portfolio showcase. Traversal and combat animations,
+collision settings, and gameplay are under active development. Plugin debug
+messages and diagnostic trace drawings are disabled in this release.
+
