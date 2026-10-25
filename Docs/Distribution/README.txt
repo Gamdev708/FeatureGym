@@ -3,7 +3,7 @@ Windows showcase build
 
 RUN
 1. Extract the entire supplied folder before running.
-2. Double-click Start_Showcase.cmd, or Windows\FeatureGym2.exe.
+2. Open the Windows folder and double-click FeatureGym2.exe.
 3. Click inside the game window if mouse input is not captured.
 4. Alt+F4 closes the game.
 
@@ -56,4 +56,5 @@ Unreal template and SuperGrid assets are third-party assets.
 This is a prototype portfolio showcase. Traversal and combat animations,
 collision settings, and gameplay are under active development. Plugin debug
 messages and diagnostic trace drawings are disabled in this release.
+
 
