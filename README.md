@@ -18,5 +18,5 @@ See [Showcase notes](Docs/Showcase_README.txt) for controls, authorship,
 validation, and known limitations, and [Climbing integration](Docs/ClimbingAnimations_README.txt)
 for animation retargeting details.
 
-The original plugins were authored in the Prototypes project. Showcase integration,
+The original plugins were authored in the [Prototypes project](https://github.com/Gamdev708/Prototypes). Showcase integration,
 level generation, and the documented climbing changes were added with Codex assistance.
