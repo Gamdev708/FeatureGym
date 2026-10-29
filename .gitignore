@@ -83,3 +83,6 @@ DerivedDataCache/*
 
 # Local project documentation
 /Docs/
+
+# Local Python utility scripts
+/Scripts/
