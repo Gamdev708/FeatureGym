@@ -80,3 +80,6 @@ DerivedDataCache/*
 .idea/*
 .codex/*
 /UpgradeLog.htm
+
+# Local project documentation
+/Docs/
