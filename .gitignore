@@ -35,6 +35,8 @@
 *.xcodeproj
 *.xcworkspace
 *.sln
+*.slnx
+*.vsconfig
 *.suo
 *.opensdf
 *.sdf
@@ -72,3 +74,9 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+#Temp
+.vs/*
+.idea/*
+.codex/*
+/UpgradeLog.htm

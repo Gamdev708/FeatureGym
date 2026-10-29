@@ -199,7 +199,7 @@ void AFGShowcaseHUD::DrawHUD()
     const FString Mode=P->bCombatMode?TEXT("COMBO SYSTEM"):TEXT("ADVANCED PARKOUR");
     DrawText(FString::Printf(TEXT("%s  |  %s  |  %.0f cm/s  |  %.1fs"),*Mode,*P->GetMovementLabel(),P->GetVelocity().Size(),P->Elapsed),FLinearColor(.7f,.8f,.85f),36,84);
     DrawText(TEXT("WASD move / Mouse look / Shift sprint / Space jump / 1 parkour / 2 combat"),FLinearColor::White,36,108);
-    DrawText(P->bCombatMode?TEXT("LMB light + charge follow-up / MMB medium / RMB heavy / R checkpoint / Home restart"):TEXT("E vault or climb / Q detach / C slide or crouch / F hop / R checkpoint / Home restart"),FLinearColor::White,36,132);
+    DrawText(P->bCombatMode?TEXT("LMB light + charge follow-up / R checkpoint / Home restart"):TEXT("E vault or climb / Q detach / C slide or crouch / F hop / R checkpoint / Home restart"),FLinearColor::White,36,132);
     if(P->bCombatMode)
     {
         DrawText(FString::Printf(TEXT("PLUGIN STATE: %s   DAMAGE: %.0f   TARGET HITS: %d   LAST HIT: %.0f"),P->Combo->IsInAttackState()?TEXT("ATTACK"):TEXT("IDLE"),P->Combo->GetCurrentStateDamage(),P->Hits,P->LastHitDamage),FLinearColor(1,.65f,.2f),36,178);
